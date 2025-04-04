@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Generador de lista de backlinks</title>
+</head>
+<body>
+    <h1>Generador de lista de backlinks</h1>
+    <form id="uploadForm">
+        <label for="txt">Selecciona la lista del mes anterior (TXT):</label>
+        <input type="file" id="txtFile" accept=".txt"><br>
+
+        <label for="csv">Selecciona la lista sin sanear del mes actual (CSV):</label>
+        <input type="file" id="csvFile" accept=".csv" required><br>
+
+        <button type="submit">Generar nueva lista saneada</button>
+    </form><br>
+
+    <a id="downloadLink" href="#" style="display: none;" download="output.txt">
+        Descargar lista
+    </a>
+
+    <script>
+        document.getElementById("uploadForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const txtFile = document.getElementById("txtFile").files[0];
+            const csvFile = document.getElementById("csvFile").files[0];
+
+            if (!txtFile || !csvFile) {
+                alert("Por favor, selecciona ambos archivos.");
+                return;
+            }
+
+            const readerTxt = new FileReader();
+            readerTxt.onload = function (e) {
+                const txtContent = e.target.result;
+
+                const readerCsv = new FileReader();
+                readerCsv.onload = function (e) {
+                    const csvContent = e.target.result;
+                    const csvLines = csvContent.split('\n');
+
+                    csvLines.shift();
+
+                    const processedCsv = csvLines.map(line => {
+                        return line.replace(/^https?:\/\/(.*)/, "domain:$1").split('/')[0];
+                    });
+
+                    let combinedContent = txtContent + "\n" + processedCsv.join("\n");
+
+                    const uniqueDomains = [...new Set(combinedContent
+                    .split("\n")
+                    .map(domain => domain.trim())
+                    .filter(domain => domain !== ""))];
+
+                    const finalContent = uniqueDomains.join("\n");
+
+                    const blob = new Blob([finalContent], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const downloadLink = document.getElementById("downloadLink");
+
+                    downloadLink.href = url;
+                    downloadLink.style.display = 'block';
+                };
+
+                readerCsv.readAsText(csvFile);
+            };
+
+            readerTxt.readAsText(txtFile);
+        });
+    </script>
+</body>
+</html>
